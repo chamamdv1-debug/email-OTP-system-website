@@ -1,153 +1,57 @@
-<!doctype html>
-<html lang="si">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Register — Email OTP</title>
-<style>
-:root{--bg:#071021;--accent:#ff7043;--muted:#9aa6b2}
-*{box-sizing:border-box;font-family:Inter,system-ui,Arial}
-body{margin:0;background:linear-gradient(180deg,#05101a,#071021);color:#eaf6f9}
-.container{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{max-width:520px;width:100%;padding:26px;border-radius:14px;background:rgba(255,255,255,0.02);box-shadow:0 12px 36px rgba(0,0,0,0.6)}
-.header{display:flex;gap:12px;align-items:center;margin-bottom:8px}
-.badge{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#ffb28a,#ff7043);display:flex;align-items:center;justify-content:center;color:#2b0a07;font-weight:800}
-label{display:block;color:var(--muted);margin-top:10px;margin-bottom:6px}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
-.row{display:flex;gap:10px;margin-top:12px}
-.btn{flex:1;padding:11px;border-radius:10px;border:none;background:var(--accent);color:#230a07;font-weight:800;cursor:pointer}
-.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
-.info{font-size:13px;margin-top:12px;color:var(--muted)}
-.otp-area{display:none;margin-top:12px}
-.otp-input{text-align:center;letter-spacing:8px;padding:12px;border-radius:10px}
-.small{font-size:12px;color:var(--muted);margin-top:12px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register with OTP</title>
+  <style>
+    body {font-family:Poppins,sans-serif;background:#101;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;}
+    .box {background:#1b1b1b;padding:30px;border-radius:12px;text-align:center;width:320px;}
+    input,button{width:100%;margin-top:10px;padding:10px;border:none;border-radius:6px;}
+    button{background:#007bff;color:white;font-weight:bold;}
+  </style>
 </head>
 <body>
-<div class="container">
-  <div class="card">
-    <div class="header">
-      <div class="badge">CH</div>
-      <div>
-        <h2>Register</h2>
-        <div class="info">නම සහ Email දී OTP හරහා register වෙමු.</div>
-      </div>
+  <div class="box">
+    <h2>Create Account</h2>
+    <input type="email" id="email" placeholder="Email Address">
+    <button onclick="sendOTP()">Send OTP</button>
+    <div id="otpBox" style="display:none;">
+      <input type="text" id="otp" placeholder="Enter OTP">
+      <button onclick="verifyOTP()">Verify & Register</button>
     </div>
-
-    <label for="name">Name</label>
-    <input id="name" type="text" placeholder="ඔයාගේ නම" />
-
-    <label for="email">Email</label>
-    <input id="email" type="email" placeholder="you@example.com" />
-
-    <div class="row">
-      <button id="sendBtn" class="btn">Send OTP</button>
-      <button id="toLogin" class="btn ghost">Back to Login</button>
-    </div>
-
-    <div id="sendInfo" class="info"></div>
-
-    <div id="otpArea" class="otp-area">
-      <label for="otp">OTP</label>
-      <input id="otp" maxlength="6" class="otp-input" type="text" inputmode="numeric" placeholder="123456" />
-      <div class="row" style="margin-top:12px">
-        <button id="verifyBtn" class="btn">Verify & Register</button>
-        <button id="resendBtn" class="btn ghost">Resend</button>
-      </div>
-      <div id="verifyInfo" class="info"></div>
-    </div>
-
-    <div class="small">Backend: <code>http://localhost:3000</code></div>
+    <p id="msg"></p>
   </div>
-</div>
+  <script>
+    const backendURL = "";
 
-<script>
-const API_BASE = 'http://localhost:3000';
-const nameInput = document.getElementById('name');
-const emailInput = document.getElementById('email');
-const sendBtn = document.getElementById('sendBtn');
-const toLogin = document.getElementById('toLogin');
-const sendInfo = document.getElementById('sendInfo');
-
-const otpArea = document.getElementById('otpArea');
-const otpInput = document.getElementById('otp');
-const verifyBtn = document.getElementById('verifyBtn');
-const resendBtn = document.getElementById('resendBtn');
-const verifyInfo = document.getElementById('verifyInfo');
-
-toLogin.addEventListener('click', ()=> location.href = 'index.html');
-
-function setInfo(el, txt, cls='info'){
-  el.textContent = txt;
-  el.className = cls;
-}
-
-async function sendOtp(){
-  const name = nameInput.value.trim();
-  const email = emailInput.value.trim();
-  if(!name) return setInfo(sendInfo, 'ඔබේ නම දාන්න.', 'error');
-  if(!email) return setInfo(sendInfo, 'Email එක දාන්න.', 'error');
-  setInfo(sendInfo, 'Sending OTP...');
-  try {
-    const res = await fetch(API_BASE + '/send-otp', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ email })
-    });
-    const data = await res.json();
-    if(res.ok && data.ok){
-      setInfo(sendInfo, 'OTP එවලා තියේ. Inbox/Spam බලන්න.', 'info');
-      otpArea.style.display = 'block';
-    } else {
-      setInfo(sendInfo, data.error || 'Send failed', 'error');
-    }
-  } catch (err) {
-    console.error(err);
-    setInfo(sendInfo, 'Backend not reachable.', 'error');
-  }
-}
-
-async function verifyAndRegister(){
-  const name = nameInput.value.trim();
-  const email = emailInput.value.trim();
-  const otp = otpInput.value.trim();
-  if(!otp) return setInfo(verifyInfo, 'OTP එක දාන්න.', 'error');
-  setInfo(verifyInfo, 'Verifying...');
-  try {
-    const res = await fetch(API_BASE + '/verify-otp', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ email, otp })
-    });
-    const data = await res.json();
-    if(res.ok && data.ok && data.token){
-      // call register with token
-      const r = await fetch(API_BASE + '/register', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ name, email, token: data.token })
+    async function sendOTP(){
+      const email=document.getElementById("email").value;
+      const res=await fetch(`${backendURL}/send-otp`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({email})
       });
-      const rd = await r.json();
-      if(r.ok && rd.ok){
-        // save auth
-        localStorage.setItem('auth', JSON.stringify({ email, token: data.token }));
-        localStorage.setItem('user', JSON.stringify(rd.user));
-        setInfo(verifyInfo, 'Registered! Redirecting...', 'info');
-        setTimeout(()=> location.href = 'dashboard.html', 700);
-      } else {
-        setInfo(verifyInfo, rd.error || 'Register failed', 'error');
-      }
-    } else {
-      setInfo(verifyInfo, data.error || 'Invalid OTP', 'error');
+      const data=await res.json();
+      document.getElementById("msg").innerText=data.message;
+      if(data.success)document.getElementById("otpBox").style.display="block";
     }
-  } catch (err) {
-    console.error(err);
-    setInfo(verifyInfo, 'Backend error.', 'error');
-  }
-}
 
-sendBtn.addEventListener('click', sendOtp);
-verifyBtn.addEventListener('click', verifyAndRegister);
-resendBtn.addEventListener('click', sendOtp);
-emailInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter') sendOtp(); });
-otpInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter') verifyAndRegister(); });
-</script>
+    async function verifyOTP(){
+      const email=document.getElementById("email").value;
+      const otp=document.getElementById("otp").value;
+      const res=await fetch(`${backendURL}/verify-otp`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({email,otp})
+      });
+      const data=await res.json();
+      document.getElementById("msg").innerText=data.message;
+      if(data.success){
+        localStorage.setItem("user",email);
+        window.location.href="dashboard.html";
+      }
+    }
+  </script>
 </body>
 </html>
