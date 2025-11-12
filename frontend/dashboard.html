@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="si">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dashboard — CHAMA</title>
+<style>
+:root{--bg:#02121a;--accent:#ff7043;--muted:#9fb0bf}
+*{box-sizing:border-box;font-family:Inter,system-ui,Arial}
+body{margin:0;background:linear-gradient(180deg,#011018,#02121a);color:#eaf6f9}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{max-width:980px;width:100%;padding:22px;border-radius:16px;background:rgba(255,255,255,0.02);box-shadow:0 16px 44px rgba(0,0,0,0.6)}
+.head{display:flex;justify-content:space-between;align-items:center}
+.title{display:flex;gap:12px;align-items:center}
+.badge{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,#ffb28a,#ff7043);display:flex;align-items:center;justify-content:center;color:#2b0a07;font-weight:800}
+.logout{padding:10px 12px;border-radius:10px;border:none;background:var(--accent);color:#230a07;font-weight:800;cursor:pointer}
+.info{color:var(--muted);margin-top:12px}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,0.02)}
+.kv:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="head">
+      <div class="title">
+        <div class="badge">CH</div>
+        <div>
+          <h1 id="welcome">Welcome</h1>
+          <div id="emailLine" class="info">loading...</div>
+        </div>
+      </div>
+      <div>
+        <button id="logout" class="logout">Logout</button>
+      </div>
+    </div>
+
+    <div style="margin-top:18px">
+      <div id="content" class="info">Loading account details...</div>
+
+      <div style="margin-top:14px">
+        <div class="kv"><div>Logged in as</div><div id="uEmail">—</div></div>
+        <div class="kv"><div>Member since</div><div id="uSince">—</div></div>
+        <div class="kv"><div>Session token</div><div id="uToken" style="font-family:monospace;font-size:12px">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:3000';
+
+function requireAuth(){
+  const auth = JSON.parse(localStorage.getItem('auth') || 'null');
+  if(!auth || !auth.token){
+    alert('Please login first.');
+    location.href = 'index.html';
+    return null;
+  }
+  return auth;
+}
+
+const auth = requireAuth();
+if(!auth) throw new Error('no auth');
+
+async function loadMe(){
+  // try call backend /me
+  try {
+    const res = await fetch(API_BASE + '/me', {
+      headers: { 'x-auth-token': auth.token }
+    });
+    const data = await res.json();
+    if(res.ok && data.ok){
+      const user = data.user;
+      document.getElementById('welcome').textContent = user.name ? `Hi, ${user.name}` : 'Welcome';
+      document.getElementById('emailLine').textContent = user.email;
+      document.getElementById('uEmail').textContent = user.email;
+      document.getElementById('uSince').textContent = new Date(user.createdAt).toLocaleString();
+      document.getElementById('uToken').textContent = auth.token;
+      document.getElementById('content').textContent = 'Account loaded from server.';
+    } else {
+      // fallback to localStorage user
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      document.getElementById('welcome').textContent = user.name ? `Hi, ${user.name}` : 'Welcome';
+      document.getElementById('emailLine').textContent = auth.email;
+      document.getElementById('uEmail').textContent = auth.email;
+      document.getElementById('uSince').textContent = user.createdAt ? new Date(user.createdAt).toLocaleString() : '—';
+      document.getElementById('uToken').textContent = auth.token;
+      document.getElementById('content').textContent = 'Unable to load server profile; using local data.';
+    }
+  } catch (err) {
+    console.error(err);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    document.getElementById('welcome').textContent = user.name ? `Hi, ${user.name}` : 'Welcome';
+    document.getElementById('emailLine').textContent = auth.email;
+    document.getElementById('uEmail').textContent = auth.email;
+    document.getElementById('uSince').textContent = user.createdAt ? new Date(user.createdAt).toLocaleString() : '—';
+    document.getElementById('uToken').textContent = auth.token;
+    document.getElementById('content').textContent = 'Server not reachable — showing local data.';
+  }
+}
+
+document.getElementById('logout').addEventListener('click', ()=>{
+  localStorage.removeItem('auth');
+  // optional: localStorage.removeItem('user');
+  location.href = 'index.html';
+});
+
+loadMe();
+</script>
+</body>
+</html>
